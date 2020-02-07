@@ -21,8 +21,9 @@ namespace ContosoUniversity
 
         [BindProperty]
         public Student Student { get; set; }
+        public string ErrorMessage { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(int? id, bool? saveChangesError = false)
         {
             if (id == null)
             {
@@ -35,24 +36,37 @@ namespace ContosoUniversity
             {
                 return NotFound();
             }
+            if (saveChangesError.GetValueOrDefault())
+            {
+                ErrorMessage = "Delete failed. Try again";
+            }
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(int? id)
         {
-            var emptyStudent = new Student();
-
-            if (await TryUpdateModelAsync<Student>(
-                emptyStudent,
-                "student",   // Prefix for form value.
-                s => s.FirstMidName, s => s.LastName, s => s.EnrollmentDate))
+            if (id == null)
             {
-                _context.Students.Add(emptyStudent);
+                return NotFound();
+            }
+            var student = await _context.Students.FindAsync(id);
+
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                _context.Students.Remove(student);
                 await _context.SaveChangesAsync();
                 return RedirectToPage("./Index");
             }
-
-            return Page();
+            catch (DbUpdateException)
+            {
+                return RedirectToAction("./Delete",
+                    new { id, saveChangesError = true });
+            }
         }
     }
 }
