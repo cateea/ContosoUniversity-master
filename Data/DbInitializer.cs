@@ -70,6 +70,7 @@ namespace ContosoUniversity.Data
                 context.Enrollments.Add(e);
             }
             context.SaveChanges();
+            context.Database.EnsureCreated();
         }
     }
 }
